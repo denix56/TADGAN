@@ -15,20 +15,21 @@ class NABTraf(pl.LightningDataModule):
         self.data_path = data_path
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.values = None
+        self.X = None
         self.index = None
+        self.data = None
 
     def prepare_data(self):
         data = load_signal(self.data_path)
         values, index = time_segments_aggregate(data, interval=600, time_column='timestamp', method = 'mean')
         sk_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', MinMaxScaler(feature_range=(-1, 1)))])
         values = sk_pipe.fit_transform(values)
-        values = rolling_window_sequences(values, target_column=0, window_size=100, target_size=1)
-        self.values = torch.tensor(values)
-        self.index = torch.tensor(index)
+        X, y, index, target_index = rolling_window_sequences(values, index, target_column=0, window_size=100, target_size=1, step_size=1)
+        self.X = X
+        self.index = index
 
     def setup(self, stage = None):
-        self.data = TensorDataset(self.values, self.index)
+        self.data = TensorDataset(torch.tensor(self.X), torch.tensor(self.index))
 
     def train_dataloader(self):
         return DataLoader(self.data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
