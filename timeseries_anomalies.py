@@ -26,11 +26,11 @@ def _compute_critic_score(critics, smooth_window):
     in_range = np.logical_and(critics >= l_quantile, critics <= u_quantile)
     critic_mean = np.mean(critics[in_range])
     critic_std = np.std(critics)
+    
 
     z_scores = np.absolute((np.asarray(critics) - critic_mean) / critic_std) + 1
     z_scores = pd.Series(z_scores).rolling(
         smooth_window, center=True, min_periods=smooth_window // 2).mean().values
-
     return z_scores
 
 
@@ -73,7 +73,6 @@ def score_anomalies(y, y_hat, critic, index, score_window=10, critic_smooth_wind
         ndarray:
             Array of anomaly scores.
     """
-
     critic_smooth_window = critic_smooth_window or math.trunc(y.shape[0] * 0.01)
     error_smooth_window = error_smooth_window or math.trunc(y.shape[0] * 0.01)
 
@@ -95,7 +94,6 @@ def score_anomalies(y, y_hat, critic, index, score_window=10, critic_smooth_wind
     critic_kde_max = []
     pred_length = y_hat.shape[1]
     num_errors = y_hat.shape[1] + step_size * (y_hat.shape[0] - 1)
-
     for i in range(num_errors):
         critic_intermediate = []
 
@@ -118,7 +116,6 @@ def score_anomalies(y, y_hat, critic, index, score_window=10, critic_smooth_wind
     # Compute reconstruction scores
     rec_scores, predictions = reconstruction_errors(
         y, y_hat, step_size, score_window, error_smooth_window, smooth, rec_error_type)
-
     rec_scores = stats.zscore(rec_scores)
     rec_scores = np.clip(rec_scores, a_min=0, a_max=None) + 1
 
@@ -385,7 +382,6 @@ def _prune_anomalies(max_errors, min_percent):
         last_index = -1
     else:
         last_index = max_error[~too_small].index[-1]
-
     return max_errors[['start', 'stop', 'max_error']].iloc[0: last_index + 1].values
 
 
@@ -409,7 +405,6 @@ def _compute_scores(pruned_anomalies, errors, threshold, window_start):
     """
     anomalies = list()
     denominator = errors.mean() + errors.std()
-
     for row in pruned_anomalies:
         max_error = row[2]
         score = (max_error - threshold) / denominator
@@ -555,7 +550,6 @@ def find_anomalies(errors, index, z_range=(0, 10), window_size=None, window_size
     window_start = 0
     window_end = 0
     sequences = list()
-
     while window_end < len(errors):
         window_end = window_start + window_size
         window = errors[window_start:window_end]
@@ -573,11 +567,9 @@ def find_anomalies(errors, index, z_range=(0, 10), window_size=None, window_size
             sequences.extend(inverted_window_sequences)
 
         window_start = window_start + window_step_size
-
     sequences = _merge_sequences(sequences)
 
     anomalies = list()
-
     for start, stop, score in sequences:
         anomalies.append([index[int(start)], index[int(stop)], score])
 
